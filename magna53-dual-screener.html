@@ -1,0 +1,1299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAGNA53 Dual Screener</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=Syne:wght@400;600;700;800&display=swap');
+
+  :root {
+    --bg: #080c10;
+    --surface: #0d1318;
+    --surface2: #111920;
+    --border: #1e2d3a;
+    --border2: #243443;
+    --text: #c8d8e4;
+    --text-dim: #5a7a8a;
+    --text-muted: #2e4a5a;
+    --green: #00e5a0;
+    --green-dim: #00b87c;
+    --amber: #f5a623;
+    --red: #ff4757;
+    --blue: #38bdf8;
+    --purple: #a78bfa;
+    --accent: #00e5a0;
+    --mono: 'Space Mono', monospace;
+    --sans: 'Syne', sans-serif;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 13px;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Grid overlay background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.015) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.015) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 24px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* Header */
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 32px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .logo-area h1 {
+    font-family: var(--sans);
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    color: #fff;
+  }
+
+  .logo-area h1 span {
+    color: var(--green);
+  }
+
+  .logo-area p {
+    color: var(--text-dim);
+    font-size: 11px;
+    margin-top: 4px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  .header-right {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .api-input-wrap {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  .api-input {
+    background: var(--surface);
+    border: 1px solid var(--border2);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 12px;
+    width: 220px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  .api-input:focus { border-color: var(--green); }
+  .api-input::placeholder { color: var(--text-muted); }
+
+  .btn {
+    background: transparent;
+    border: 1px solid var(--green);
+    color: var(--green);
+    font-family: var(--mono);
+    font-size: 11px;
+    padding: 7px 16px;
+    cursor: pointer;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .btn:hover {
+    background: var(--green);
+    color: var(--bg);
+  }
+
+  .btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .btn.loading::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 2px;
+    background: var(--green);
+    animation: loadbar 1.5s ease-in-out infinite;
+  }
+
+  @keyframes loadbar {
+    0% { width: 0; left: 0; }
+    50% { width: 100%; left: 0; }
+    100% { width: 0; left: 100%; }
+  }
+
+  .btn-demo {
+    border-color: var(--text-muted);
+    color: var(--text-dim);
+  }
+
+  .btn-demo:hover {
+    background: var(--surface2);
+    color: var(--text);
+    border-color: var(--border2);
+  }
+
+  /* Status bar */
+  .status-bar {
+    display: flex;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 24px;
+    padding: 10px 14px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .status-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .status-dot.live { background: var(--green); animation: pulse 2s infinite; }
+  .status-dot.error { background: var(--red); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .status-text { color: var(--text); }
+
+  /* Tabs */
+  .tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 0;
+    border-bottom: 1px solid var(--border);
+  }
+
+  .tab {
+    padding: 12px 24px;
+    cursor: pointer;
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+    margin-bottom: -1px;
+    position: relative;
+  }
+
+  .tab:hover { color: var(--text); }
+
+  .tab.active-magna {
+    color: var(--green);
+    border-bottom-color: var(--green);
+  }
+
+  .tab.active-catalyst {
+    color: var(--amber);
+    border-bottom-color: var(--amber);
+  }
+
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    background: var(--surface2);
+    border-radius: 9px;
+    font-size: 10px;
+    margin-left: 8px;
+    color: var(--text-dim);
+  }
+
+  .tab.active-magna .tab-badge { background: rgba(0,229,160,0.15); color: var(--green); }
+  .tab.active-catalyst .tab-badge { background: rgba(245,166,35,0.15); color: var(--amber); }
+
+  /* Panel */
+  .panel {
+    display: none;
+    padding: 24px 0;
+  }
+
+  .panel.active { display: block; }
+
+  /* Route legend */
+  .route-legend {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+  }
+
+  .route-tag {
+    padding: 4px 10px;
+    font-size: 10px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    border: 1px solid;
+  }
+
+  .route-a { border-color: var(--green); color: var(--green); }
+  .route-b { border-color: var(--blue); color: var(--blue); }
+  .route-c { border-color: var(--purple); color: var(--purple); }
+  .route-cat { border-color: var(--amber); color: var(--amber); }
+
+  /* Cards grid */
+  .cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
+    gap: 16px;
+  }
+
+  /* Stock card */
+  .stock-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    position: relative;
+    transition: border-color 0.2s;
+    animation: fadeIn 0.3s ease forwards;
+    opacity: 0;
+  }
+
+  .stock-card:hover { border-color: var(--border2); }
+
+  @keyframes fadeIn {
+    to { opacity: 1; transform: translateY(0); }
+    from { opacity: 0; transform: translateY(8px); }
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+  }
+
+  .ticker-block {}
+
+  .ticker {
+    font-family: var(--sans);
+    font-size: 22px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+  }
+
+  .company-name {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 2px;
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .card-routes {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 4px;
+  }
+
+  .gap-badge {
+    font-family: var(--sans);
+    font-size: 20px;
+    font-weight: 700;
+  }
+
+  .gap-positive { color: var(--green); }
+  .gap-negative { color: var(--red); }
+
+  /* Metrics grid */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .metric {
+    background: var(--surface2);
+    padding: 8px 10px;
+    border: 1px solid var(--border);
+  }
+
+  .metric-label {
+    font-size: 9px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+  }
+
+  .metric-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .metric-value.pass { color: var(--green); }
+  .metric-value.warn { color: var(--amber); }
+  .metric-value.fail { color: var(--red); }
+  .metric-value.neutral { color: var(--blue); }
+
+  /* Criteria checklist */
+  .criteria-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 14px;
+    padding: 12px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+  }
+
+  .criteria-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 11px;
+    color: var(--text-dim);
+  }
+
+  .criteria-item .icon { font-size: 12px; width: 16px; text-align: center; }
+  .criteria-item.pass { color: var(--text); }
+  .criteria-item.pass .icon { color: var(--green); }
+  .criteria-item.fail .icon { color: var(--red); }
+  .criteria-item.warn .icon { color: var(--amber); }
+
+  /* Score bar */
+  .score-section {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .score-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .score-bar-wrap {
+    flex: 1;
+    height: 4px;
+    background: var(--border);
+    position: relative;
+  }
+
+  .score-bar-fill {
+    height: 100%;
+    transition: width 0.8s ease;
+  }
+
+  .score-value {
+    font-size: 12px;
+    font-weight: 700;
+    min-width: 30px;
+    text-align: right;
+  }
+
+  /* Headline / catalyst */
+  .catalyst-headline {
+    padding: 10px 12px;
+    background: rgba(245,166,35,0.05);
+    border: 1px solid rgba(245,166,35,0.2);
+    border-left: 3px solid var(--amber);
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 14px;
+    line-height: 1.5;
+  }
+
+  .catalyst-headline .catalyst-label {
+    font-size: 9px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--amber);
+    margin-bottom: 4px;
+  }
+
+  /* Keyword tags */
+  .keyword-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-bottom: 12px;
+  }
+
+  .keyword-tag {
+    padding: 2px 8px;
+    background: rgba(245,166,35,0.1);
+    border: 1px solid rgba(245,166,35,0.3);
+    font-size: 10px;
+    color: var(--amber);
+    letter-spacing: 0.5px;
+  }
+
+  /* Card footer */
+  .card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 12px;
+    border-top: 1px solid var(--border);
+    font-size: 10px;
+    color: var(--text-muted);
+  }
+
+  .verdict {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 3px 10px;
+    border: 1px solid;
+  }
+
+  .verdict.strong { border-color: var(--green); color: var(--green); }
+  .verdict.watch { border-color: var(--amber); color: var(--amber); }
+  .verdict.pass-flag { border-color: var(--text-muted); color: var(--text-muted); }
+
+  /* Empty state */
+  .empty-state {
+    text-align: center;
+    padding: 80px 40px;
+    color: var(--text-muted);
+  }
+
+  .empty-state .big-text {
+    font-family: var(--sans);
+    font-size: 48px;
+    font-weight: 800;
+    color: var(--border2);
+    margin-bottom: 16px;
+  }
+
+  .empty-state p { font-size: 12px; line-height: 1.8; }
+
+  /* Error state */
+  .error-state {
+    padding: 20px;
+    background: rgba(255,71,87,0.05);
+    border: 1px solid rgba(255,71,87,0.3);
+    color: var(--red);
+    font-size: 12px;
+    line-height: 1.6;
+  }
+
+  /* Loading skeleton */
+  .skeleton {
+    background: linear-gradient(90deg, var(--surface) 25%, var(--surface2) 50%, var(--surface) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 2px;
+  }
+
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .skeleton-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 20px;
+    height: 280px;
+  }
+
+  .skeleton-line {
+    height: 12px;
+    margin-bottom: 10px;
+  }
+
+  /* Date display */
+  .date-display {
+    font-size: 11px;
+    color: var(--text-dim);
+    font-family: var(--mono);
+  }
+
+  /* Summary stats */
+  .summary-stats {
+    display: flex;
+    gap: 24px;
+    margin-bottom: 20px;
+    padding: 14px 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .stat-item {}
+  .stat-item .stat-val {
+    font-family: var(--sans);
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+  }
+
+  .stat-item .stat-lbl {
+    font-size: 10px;
+    color: var(--text-muted);
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-top: 2px;
+  }
+
+  .stat-divider {
+    width: 1px;
+    background: var(--border);
+  }
+
+  /* Tooltip */
+  .tooltip-wrap { position: relative; display: inline-block; }
+  .tooltip-wrap:hover .tooltip { display: block; }
+  .tooltip {
+    display: none;
+    position: absolute;
+    bottom: 120%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: var(--surface2);
+    border: 1px solid var(--border2);
+    padding: 6px 10px;
+    font-size: 10px;
+    color: var(--text);
+    white-space: nowrap;
+    z-index: 100;
+  }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .cards-grid { grid-template-columns: 1fr; }
+    .header { flex-direction: column; gap: 16px; }
+    .header-right { align-items: flex-start; }
+    .summary-stats { flex-wrap: wrap; gap: 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="logo-area">
+      <h1>MAGNA<span>53</span> SCREENER</h1>
+      <p>Dual-Route · Live Earnings · Finnhub</p>
+    </div>
+    <div class="header-right">
+      <div class="api-input-wrap">
+        <input class="api-input" id="apiKey" type="password" placeholder="Finnhub API key...">
+        <button class="btn" id="scanBtn" onclick="runScan()">SCAN TODAY</button>
+        <button class="btn btn-demo" onclick="loadDemoData()">DEMO</button>
+      </div>
+      <div class="date-display" id="dateDisplay"></div>
+    </div>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar">
+    <div class="status-dot" id="statusDot"></div>
+    <span class="status-text" id="statusText">Enter Finnhub API key and click SCAN — or try DEMO mode</span>
+    <span style="margin-left:auto; color: var(--text-muted)">GET FREE KEY: finnhub.io/register</span>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tabs">
+    <div class="tab active-magna" id="tab-magna" onclick="switchTab('magna')">
+      MAGNA53 <span class="tab-badge" id="badge-magna">0</span>
+    </div>
+    <div class="tab" id="tab-catalyst" onclick="switchTab('catalyst')">
+      CATALYST GAP <span class="tab-badge" id="badge-catalyst">0</span>
+    </div>
+    <div class="tab" id="tab-all" onclick="switchTab('all')">
+      ALL FLAGGED <span class="tab-badge" id="badge-all">0</span>
+    </div>
+  </div>
+
+  <!-- MAGNA53 Panel -->
+  <div class="panel active" id="panel-magna">
+    <div class="route-legend">
+      <span class="route-tag route-a">Route A: Standard Gap</span>
+      <span class="route-tag route-b">Route B: Massive Surprise</span>
+      <span class="route-tag route-c">Route C: Earnings Surprise</span>
+    </div>
+    <div id="summary-magna" style="display:none">
+      <div class="summary-stats" id="stats-magna"></div>
+    </div>
+    <div id="magna-content">
+      <div class="empty-state">
+        <div class="big-text">M53</div>
+        <p>Scan today's earnings to find MAGNA53 setups.<br>Route A (gap + revenue growth), Route B (massive EPS surprise),<br>Route C (earnings surprise + sales growth).</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Catalyst Panel -->
+  <div class="panel" id="panel-catalyst">
+    <div class="route-legend">
+      <span class="route-tag route-cat">Catalyst Gap: Contract / AI / Narrative</span>
+    </div>
+    <div id="summary-catalyst" style="display:none">
+      <div class="summary-stats" id="stats-catalyst"></div>
+    </div>
+    <div id="catalyst-content">
+      <div class="empty-state">
+        <div class="big-text">CAT</div>
+        <p>Finds BW-type trades — big gap + narrative catalyst.<br>Scans news headlines for contracts, backlog, AI, awarded deals.<br>Revenue decline flagged but not disqualifying.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- All Panel -->
+  <div class="panel" id="panel-all">
+    <div id="all-content">
+      <div class="empty-state">
+        <div class="big-text">ALL</div>
+        <p>All flagged stocks from both routes combined.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+const CATALYST_KEYWORDS = [
+  'contract','backlog','awarded','award','gigawatt','billion','notice to proceed',
+  'ai data center','data centre','artificial intelligence','power generation',
+  'nuclear','hydrogen','carbon capture','pipeline','record','breakthrough',
+  'partnership','acquisition','merger','fda approval','approval','clearance',
+  'defense','defence','government','federal','military','nasdaq:','nyse:',
+  'upgrade','raised','outperform','buy rating'
+];
+
+const HOT_SECTORS = ['Technology','Energy','Industrials','Health Care','Defense','Utilities','Semiconductors'];
+
+// ─── STATE ────────────────────────────────────────────────────────────────────
+let allResults = [];
+let magnaResults = [];
+let catalystResults = [];
+let activeTab = 'magna';
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const now = new Date();
+  document.getElementById('dateDisplay').textContent =
+    now.toLocaleDateString('en-GB', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+};
+
+// ─── TAB SWITCHING ────────────────────────────────────────────────────────────
+function switchTab(tab) {
+  activeTab = tab;
+  ['magna','catalyst','all'].forEach(t => {
+    document.getElementById(`panel-${t}`).classList.remove('active');
+    document.getElementById(`tab-${t}`).className = 'tab';
+  });
+  document.getElementById(`panel-${tab}`).classList.add('active');
+  document.getElementById(`tab-${tab}`).className =
+    tab === 'catalyst' ? 'tab active-catalyst' : 'tab active-magna';
+}
+
+// ─── DEBUG LOG ────────────────────────────────────────────────────────────────
+function debugLog(msg, data) {
+  console.log(`[MAGNA53] ${msg}`, data || '');
+  const el = document.getElementById('debugLog');
+  if (el) {
+    const line = document.createElement('div');
+    line.textContent = `${new Date().toLocaleTimeString()} — ${msg}${data ? ': ' + JSON.stringify(data).slice(0,120) : ''}`;
+    el.appendChild(line);
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+// ─── MAIN SCAN ────────────────────────────────────────────────────────────────
+async function runScan() {
+  const apiKey = document.getElementById('apiKey').value.trim();
+  if (!apiKey) { alert('Please enter your Finnhub API key'); return; }
+
+  setStatus('scanning', 'Fetching today\'s earnings calendar...');
+  showSkeletons();
+  showDebug();
+
+  const today = getTodayStr();
+  const yesterday = getYesterdayStr();
+  debugLog('Starting scan', { today, yesterday });
+
+  try {
+    // Step 1: Earnings calendar
+    const calUrl = `https://finnhub.io/api/v1/calendar/earnings?from=${yesterday}&to=${today}&token=${apiKey}`;
+    debugLog('Fetching calendar', calUrl.replace(apiKey, 'KEY_HIDDEN'));
+
+    let calRes;
+    try {
+      calRes = await fetch(calUrl);
+    } catch(fetchErr) {
+      debugLog('FETCH FAILED', fetchErr.message);
+      throw new Error(`Network error — ${fetchErr.message}. Make sure you're opening this file in a browser (not a code editor preview).`);
+    }
+
+    debugLog('Calendar response status', calRes.status);
+
+    if (calRes.status === 401 || calRes.status === 403) {
+      throw new Error(`API key rejected (${calRes.status}). Double-check your Finnhub key at finnhub.io/dashboard`);
+    }
+    if (!calRes.ok) {
+      const body = await calRes.text();
+      debugLog('Error body', body);
+      throw new Error(`Finnhub returned ${calRes.status}: ${body.slice(0,100)}`);
+    }
+
+    let calData;
+    try {
+      calData = await calRes.json();
+    } catch(jsonErr) {
+      const raw = await calRes.text().catch(() => 'unreadable');
+      debugLog('JSON parse failed', raw.slice(0,200));
+      throw new Error(`Unexpected response from Finnhub (not JSON). Raw: ${raw.slice(0,100)}`);
+    }
+
+    debugLog('Calendar data received', { keys: Object.keys(calData), count: calData.earningsCalendar?.length });
+
+    const earnings = calData.earningsCalendar || [];
+    if (!earnings.length) {
+      setStatus('live', `No earnings found for ${today} — try a weekday or check the date`);
+      showError('magna-content', `No earnings found for ${today}. The calendar may be empty for today. Try clicking DEMO to see how it works.`);
+      return;
+    }
+
+    debugLog(`Found ${earnings.length} total earnings entries`);
+    setStatus('scanning', `Found ${earnings.length} earnings. Filtering reported ones...`);
+
+    // Filter to released (have actual EPS)
+    const released = earnings.filter(e => e.epsActual !== null && e.epsActual !== undefined);
+    debugLog(`${released.length} have actual EPS reported`, released.slice(0,3).map(e => e.symbol));
+
+    if (!released.length) {
+      // Show all from calendar even without actuals — useful for pre-market
+      setStatus('live', `${earnings.length} earnings on calendar but no actuals yet. Showing all gapping stocks.`);
+      const allSymbols = earnings.slice(0, 30);
+      setStatus('scanning', `Fetching quotes for ${allSymbols.length} stocks...`);
+      const results = [];
+      for (let i = 0; i < allSymbols.length; i += 5) {
+        const batch = allSymbols.slice(i, i + 5);
+        const batchResults = await Promise.all(batch.map(e => processStock(e, apiKey)));
+        results.push(...batchResults.filter(Boolean));
+        if (i + 5 
+
+// ─── PROCESS SINGLE STOCK ─────────────────────────────────────────────────────
+async function processStock(earning, apiKey) {
+  const symbol = earning.symbol;
+  try {
+    // Fetch quote + company profile + recent news in parallel
+    const [quoteRes, profileRes, newsRes] = await Promise.all([
+      fetch(`https://finnhub.io/api/v1/quote?symbol=${symbol}&token=${apiKey}`),
+      fetch(`https://finnhub.io/api/v1/stock/profile2?symbol=${symbol}&token=${apiKey}`),
+      fetch(`https://finnhub.io/api/v1/company-news?symbol=${symbol}&from=${getYesterdayStr()}&to=${getTodayStr()}&token=${apiKey}`)
+    ]);
+
+    const quote = await quoteRes.json();
+    const profile = await profileRes.json();
+    const newsArr = await newsRes.json();
+
+    // Calculate gap % (current vs previous close)
+    const gap = quote.pc > 0 ? ((quote.c - quote.pc) / quote.pc) * 100 : 0;
+
+    // EPS calculations
+    const epsActual = earning.epsActual;
+    const epsEst = earning.epsEstimate;
+    const epsSurprisePct = (epsEst !== null && epsEst !== 0)
+      ? ((epsActual - epsEst) / Math.abs(epsEst)) * 100
+      : null;
+
+    // Revenue
+    const revActual = earning.revenueActual;
+    const revEst = earning.revenueEstimate;
+    const revSurprisePct = (revEst && revEst > 0)
+      ? ((revActual - revEst) / revEst) * 100
+      : null;
+
+    // Volume (approximate from market cap and price)
+    const volume = profile.marketCapitalization
+      ? Math.round((profile.marketCapitalization * 1e6) / (quote.c || 1) * 0.01)
+      : null;
+
+    // Scan news headlines for catalyst keywords
+    const headlines = Array.isArray(newsArr) ? newsArr.slice(0, 10) : [];
+    const allHeadlineText = headlines.map(n => (n.headline || n.summary || '')).join(' ').toLowerCase();
+    const matchedKeywords = CATALYST_KEYWORDS.filter(k => allHeadlineText.includes(k.toLowerCase()));
+    const topHeadline = headlines.length > 0 ? headlines[0].headline : null;
+
+    // Annual revenue (from profile - approximate)
+    const annualRevM = profile.marketCapitalization ? null : null; // Would need financials endpoint
+
+    // ── MAGNA53 SCORING ──────────────────────────────────────────────────────
+    let magnaRoute = null;
+    let magnaScore = 0;
+    let criteria = [];
+
+    const gapPass = Math.abs(gap) >= 4;
+    const bigGap = Math.abs(gap) >= 8;
+    const epsBeats = epsSurprisePct !== null && epsSurprisePct > 0;
+    const bigEpsSurprise = epsSurprisePct !== null && epsSurprisePct >= 50;
+    const massiveEpsSurprise = epsSurprisePct !== null && epsSurprisePct >= 100;
+    const revBeats = revSurprisePct !== null && revSurprisePct > 0;
+    const bigRevSurprise = revSurprisePct !== null && revSurprisePct >= 100;
+
+    // Route B: Massive Surprise (most lenient on revenue growth)
+    if (gapPass && massiveEpsSurprise) {
+      magnaRoute = 'B';
+      magnaScore = 80;
+      if (bigGap) magnaScore += 10;
+      if (revBeats) magnaScore += 10;
+      criteria = [
+        { label: `Gap ${gap.toFixed(1)}% (need 4%+)`, pass: gapPass },
+        { label: `EPS surprise ${epsSurprisePct?.toFixed(0)}% (need 100%+)`, pass: massiveEpsSurprise },
+        { label: `Revenue beat: ${revSurprisePct !== null ? revSurprisePct.toFixed(1)+'%' : 'N/A'}`, pass: revBeats, warn: !revBeats && revSurprisePct !== null },
+        { label: `Big surprise catalyst (100%+)`, pass: true },
+      ];
+    }
+    // Route C: Earnings Surprise 100%+ with some sales growth
+    else if (gapPass && massiveEpsSurprise && revBeats) {
+      magnaRoute = 'C';
+      magnaScore = 85;
+    }
+    // Route A: Standard — requires gap + significant beats
+    else if (gapPass && epsBeats && revBeats) {
+      magnaRoute = 'A';
+      magnaScore = 60;
+      if (bigGap) magnaScore += 15;
+      if (bigEpsSurprise) magnaScore += 15;
+      if (bigRevSurprise) magnaScore += 10;
+      criteria = [
+        { label: `Gap ${gap.toFixed(1)}% (need 4%+)`, pass: gapPass },
+        { label: `EPS beat ${epsSurprisePct?.toFixed(1)}%`, pass: epsBeats },
+        { label: `Revenue beat ${revSurprisePct?.toFixed(1)}%`, pass: revBeats },
+        { label: `Strong surprise signal`, pass: bigEpsSurprise },
+      ];
+    }
+
+    if (magnaRoute && !criteria.length) {
+      criteria = [
+        { label: `Gap ${gap.toFixed(1)}%`, pass: gapPass },
+        { label: `EPS surprise ${epsSurprisePct !== null ? epsSurprisePct.toFixed(0)+'%' : 'N/A'}`, pass: epsBeats },
+        { label: `Revenue ${revSurprisePct !== null ? (revBeats?'+':'')+revSurprisePct.toFixed(1)+'%' : 'N/A'}`, pass: revBeats, warn: !revBeats },
+      ];
+    }
+
+    // ── CATALYST SCORING ─────────────────────────────────────────────────────
+    const isCatalyst = Math.abs(gap) >= 8 && epsBeats && matchedKeywords.length >= 1;
+    const catalystScore = Math.min(100, 40 + (matchedKeywords.length * 10) + (Math.abs(gap) > 15 ? 20 : 0));
+
+    // Revenue warning flag
+    const revDecline = revSurprisePct !== null && revSurprisePct < -5;
+
+    return {
+      symbol,
+      companyName: profile.name || symbol,
+      sector: profile.finnhubIndustry || 'Unknown',
+      gap,
+      price: quote.c,
+      prevClose: quote.pc,
+      epsActual,
+      epsEst,
+      epsSurprisePct,
+      revActual,
+      revEst,
+      revSurprisePct,
+      revDecline,
+      magnaRoute,
+      magnaScore,
+      criteria,
+      isCatalyst,
+      catalystScore,
+      matchedKeywords,
+      topHeadline,
+      marketCap: profile.marketCapitalization,
+    };
+  } catch(e) {
+    return null;
+  }
+}
+
+// ─── RENDER ───────────────────────────────────────────────────────────────────
+function renderResults() {
+  // Update badges
+  document.getElementById('badge-magna').textContent = magnaResults.length;
+  document.getElementById('badge-catalyst').textContent = catalystResults.length;
+  document.getElementById('badge-all').textContent = allResults.filter(r => r.magnaRoute || r.isCatalyst).length;
+
+  // Sort by score
+  magnaResults.sort((a,b) => b.magnaScore - a.magnaScore);
+  catalystResults.sort((a,b) => b.catalystScore - a.catalystScore);
+
+  // Render MAGNA53
+  if (magnaResults.length) {
+    renderStats('stats-magna', magnaResults, 'magna');
+    document.getElementById('summary-magna').style.display = 'block';
+    document.getElementById('magna-content').innerHTML =
+      `<div class="cards-grid">${magnaResults.map(r => renderMagnaCard(r)).join('')}</div>`;
+  } else {
+    document.getElementById('magna-content').innerHTML =
+      `<div class="empty-state"><div class="big-text">0</div><p>No MAGNA53 setups found in today's earnings.<br>Criteria: 4%+ gap, EPS beat, revenue growth signal.</p></div>`;
+  }
+
+  // Render Catalyst
+  if (catalystResults.length) {
+    renderStats('stats-catalyst', catalystResults, 'catalyst');
+    document.getElementById('summary-catalyst').style.display = 'block';
+    document.getElementById('catalyst-content').innerHTML =
+      `<div class="cards-grid">${catalystResults.map(r => renderCatalystCard(r)).join('')}</div>`;
+  } else {
+    document.getElementById('catalyst-content').innerHTML =
+      `<div class="empty-state"><div class="big-text">0</div><p>No catalyst gap trades found today.<br>Criteria: 8%+ gap + EPS beat + news keywords.</p></div>`;
+  }
+
+  // Render All
+  const allFlagged = [...new Set([...magnaResults, ...catalystResults].map(r=>r.symbol))]
+    .map(s => allResults.find(r=>r.symbol===s))
+    .filter(Boolean)
+    .sort((a,b) => Math.abs(b.gap) - Math.abs(a.gap));
+
+  if (allFlagged.length) {
+    document.getElementById('all-content').innerHTML =
+      `<div class="cards-grid">${allFlagged.map(r => r.magnaRoute ? renderMagnaCard(r) : renderCatalystCard(r)).join('')}</div>`;
+  }
+}
+
+function renderStats(elId, results, type) {
+  const avgGap = results.reduce((s,r) => s + Math.abs(r.gap), 0) / results.length;
+  const maxGap = Math.max(...results.map(r => Math.abs(r.gap)));
+  const color = type === 'catalyst' ? 'var(--amber)' : 'var(--green)';
+  document.getElementById(elId).innerHTML = `
+    <div class="stat-item"><div class="stat-val" style="color:${color}">${results.length}</div><div class="stat-lbl">Flagged</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><div class="stat-val">${avgGap.toFixed(1)}%</div><div class="stat-lbl">Avg Gap</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><div class="stat-val">${maxGap.toFixed(1)}%</div><div class="stat-lbl">Max Gap</div></div>
+    <div class="stat-divider"></div>
+    <div class="stat-item"><div class="stat-val">${results.filter(r=>r.gap>0).length}</div><div class="stat-lbl">Gapped Up</div></div>
+  `;
+}
+
+function renderMagnaCard(r) {
+  const routeColors = { A: 'var(--green)', B: 'var(--blue)', C: 'var(--purple)' };
+  const routeColor = routeColors[r.magnaRoute] || 'var(--green)';
+  const gapClass = r.gap >= 0 ? 'gap-positive' : 'gap-negative';
+  const scoreColor = r.magnaScore >= 80 ? 'var(--green)' : r.magnaScore >= 60 ? 'var(--amber)' : 'var(--red)';
+  const verdict = r.magnaScore >= 80 ? 'strong' : 'watch';
+  const verdictText = r.magnaScore >= 80 ? 'STRONG SETUP' : 'WATCH';
+
+  const criteriaHtml = r.criteria.map(c => `
+    <div class="criteria-item ${c.pass ? 'pass' : c.warn ? 'warn' : 'fail'}">
+      <span class="icon">${c.pass ? '✓' : c.warn ? '⚠' : '✗'}</span>
+      <span>${c.label}</span>
+    </div>
+  `).join('');
+
+  return `
+    <div class="stock-card" style="border-left: 3px solid ${routeColor}">
+      <div class="card-header">
+        <div class="ticker-block">
+          <div class="ticker">${r.symbol}</div>
+          <div class="company-name">${r.companyName}</div>
+          <div class="company-name" style="margin-top:2px; color: var(--text-muted)">${r.sector}</div>
+        </div>
+        <div class="card-routes">
+          <div class="gap-badge ${gapClass}">${r.gap >= 0 ? '+' : ''}${r.gap.toFixed(1)}%</div>
+          <div style="font-size:10px; color:${routeColor}; letter-spacing:1px; text-align:right">ROUTE ${r.magnaRoute}</div>
+          ${r.revDecline ? '<div style="font-size:9px; color:var(--amber); letter-spacing:1px">⚠ REV DECLINE</div>' : ''}
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">EPS Surprise</div>
+          <div class="metric-value ${r.epsSurprisePct >= 100 ? 'pass' : r.epsSurprisePct >= 0 ? 'neutral' : 'fail'}">
+            ${r.epsSurprisePct !== null ? (r.epsSurprisePct >= 0 ? '+' : '') + r.epsSurprisePct.toFixed(0) + '%' : 'N/A'}
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Rev Surprise</div>
+          <div class="metric-value ${r.revSurprisePct >= 5 ? 'pass' : r.revSurprisePct >= 0 ? 'neutral' : 'warn'}">
+            ${r.revSurprisePct !== null ? (r.revSurprisePct >= 0 ? '+' : '') + r.revSurprisePct.toFixed(1) + '%' : 'N/A'}
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Price</div>
+          <div class="metric-value neutral">$${r.price?.toFixed(2) || 'N/A'}</div>
+        </div>
+      </div>
+
+      ${criteriaHtml ? `<div class="criteria-list">${criteriaHtml}</div>` : ''}
+
+      ${r.topHeadline ? `
+        <div class="catalyst-headline" style="border-left-color: ${routeColor}; background: rgba(0,229,160,0.03); border-color: rgba(0,229,160,0.15)">
+          <div class="catalyst-label" style="color:${routeColor}">Latest Headline</div>
+          ${r.topHeadline}
+        </div>
+      ` : ''}
+
+      <div class="score-section">
+        <span class="score-label">M53 Score</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar-fill" style="width:${r.magnaScore}%; background:${scoreColor}"></div>
+        </div>
+        <span class="score-value" style="color:${scoreColor}">${r.magnaScore}</span>
+      </div>
+
+      <div class="card-footer">
+        <span>EPS: ${r.epsActual?.toFixed(2) || 'N/A'} vs est ${r.epsEst?.toFixed(2) || 'N/A'}</span>
+        <span class="verdict ${verdict}">${verdictText}</span>
+      </div>
+    </div>
+  `;
+}
+
+function renderCatalystCard(r) {
+  const gapClass = r.gap >= 0 ? 'gap-positive' : 'gap-negative';
+  const scoreColor = r.catalystScore >= 70 ? 'var(--amber)' : 'var(--text-dim)';
+
+  const keywordsHtml = r.matchedKeywords.slice(0, 6).map(k =>
+    `<span class="keyword-tag">${k}</span>`
+  ).join('');
+
+  return `
+    <div class="stock-card" style="border-left: 3px solid var(--amber)">
+      <div class="card-header">
+        <div class="ticker-block">
+          <div class="ticker">${r.symbol}</div>
+          <div class="company-name">${r.companyName}</div>
+          <div class="company-name" style="margin-top:2px; color: var(--text-muted)">${r.sector}</div>
+        </div>
+        <div class="card-routes">
+          <div class="gap-badge ${gapClass}">${r.gap >= 0 ? '+' : ''}${r.gap.toFixed(1)}%</div>
+          <div style="font-size:10px; color:var(--amber); letter-spacing:1px; text-align:right">CATALYST</div>
+          ${r.revDecline ? '<div style="font-size:9px; color:var(--amber); letter-spacing:1px">⚠ REV DECLINE</div>' : ''}
+        </div>
+      </div>
+
+      <div class="metrics">
+        <div class="metric">
+          <div class="metric-label">EPS Surprise</div>
+          <div class="metric-value ${r.epsSurprisePct >= 0 ? 'neutral' : 'warn'}">
+            ${r.epsSurprisePct !== null ? (r.epsSurprisePct >= 0 ? '+' : '') + r.epsSurprisePct.toFixed(0) + '%' : 'N/A'}
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Rev vs Est</div>
+          <div class="metric-value ${r.revSurprisePct >= 0 ? 'neutral' : 'warn'}">
+            ${r.revSurprisePct !== null ? (r.revSurprisePct >= 0 ? '+' : '') + r.revSurprisePct.toFixed(1) + '%' : 'N/A'}
+          </div>
+        </div>
+        <div class="metric">
+          <div class="metric-label">Price</div>
+          <div class="metric-value neutral">$${r.price?.toFixed(2) || 'N/A'}</div>
+        </div>
+      </div>
+
+      ${r.topHeadline ? `
+        <div class="catalyst-headline">
+          <div class="catalyst-label">Catalyst Headline</div>
+          ${r.topHeadline}
+        </div>
+      ` : ''}
+
+      ${keywordsHtml ? `
+        <div class="keyword-tags">${keywordsHtml}</div>
+      ` : ''}
+
+      <div class="score-section">
+        <span class="score-label">CAT Score</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar-fill" style="width:${r.catalystScore}%; background:var(--amber)"></div>
+        </div>
+        <span class="score-value" style="color:${scoreColor}">${r.catalystScore}</span>
+      </div>
+
+      <div class="card-footer">
+        <span>${r.matchedKeywords.length} keyword${r.matchedKeywords.length !== 1 ? 's' : ''} matched · EPS ${r.epsActual?.toFixed(2) || 'N/A'}</span>
+        <span class="verdict watch">CATALYST</span>
+      </div>
+    </div>
+  `;
+}
+
+// ─── DEMO DATA ────────────────────────────────────────────────────────────────
+function loadDemoData() {
+  setStatus('live', 'Demo mode — showing example results based on typical earnings day');
+
+  const demo = [
+    {
+      symbol: 'BW', companyName: 'Babcock & Wilcox Enterprises', sector: 'Industrials',
+      gap: 24.1, price: 10.05, prevClose: 8.10,
+      epsActual: -0.05, epsEst: -0.07, epsSurprisePct: 28.6,
+      revActual: 161, revEst: 155.6, revSurprisePct: 3.5,
+      revDecline: true, magnaRoute: null, magnaScore: 0,
+      criteria: [
+        { label: 'Gap 24.1% (need 4%+)', pass: true },
+        { label: 'EPS surprise 29% (need 100% for Route B)', pass: false },
+        { label: 'Revenue decline YoY', pass: false, warn: true },
+      ],
+      isCatalyst: true, catalystScore: 88,
+      matchedKeywords: ['contract', 'backlog', 'billion', 'ai data center', 'power generation', 'notice to proceed'],
+      topHeadline: 'Babcock & Wilcox receives $2.4B notice to proceed on AI data center power generation project',
+      marketCap: 900
+    },
+    {
+      symbol: 'AEHR', companyName: 'Aehr Test Systems', sector: 'Semiconductors',
+      gap: 18.3, price: 12.40, prevClose: 10.48,
+      epsActual: 0.12, epsEst: 0.07, epsSurprisePct: 71.4,
+      revActual: 24.1, revEst: 19.8, revSurprisePct: 21.7,
+      revDecline: false, magnaRoute: 'A', magnaScore: 75,
+      criteria: [
+        { label: 'Gap 18.3% (need 4%+)', pass: true },
+        { label: 'EPS surprise +71%', pass: true },
+        { label: 'Revenue beat +21.7%', pass: true },
+        { label: 'Strong surprise signal', pass: true },
+      ],
+      isCatalyst: true, catalystScore: 72,
+      matchedKeywords: ['silicon carbide', 'ai', 'semiconductor'],
+      topHeadline: 'Aehr Test Systems beats Q3 estimates, raises FY guidance on AI chip demand surge',
+      marketCap: 450
+    },
+    {
+      symbol: 'RELY', companyName: 'Remitly Global', sector: 'Technology',
+      gap: 12.7, price: 18.90, prevClose: 16.77,
+      epsActual: 0.08, epsEst: -0.02, epsSurprisePct: 500,
+      revActual: 348, revEst: 331, revSurprisePct: 5.1,
+      revDecline: false, magnaRoute: 'B', magnaScore: 92,
+      criteria: [
+        { label: 'Gap 12.7% (need 4%+)', pass: true },
+        { label: 'EPS surprise 500% (need 100%+)', pass: true },
+        { label: 'Revenue beat +5.1%', pass: true },
+        { label: 'Neglect signal — under coverage', pass: true },
+      ],
+      isCatalyst: false, catalystScore: 55,
+      matchedKeywords: ['partnership', 'record'],
+      topHeadline: 'Remitly posts first profitable quarter, active users up 34% YoY',
+      marketCap: 3800
+    },
+    {
+      symbol: 'VERX', companyName: 'Vertex Inc', sector: 'Technology',
+      gap: 9.2, price: 44.10, prevClose: 40.38,
+      epsActual: 0.14, epsEst: 0.09, epsSurprisePct: 55.6,
+      revActual: 142, revEst: 134, revSurprisePct: 6.0,
+      revDecline: false, magnaRoute: 'A', magnaScore: 70,
+      criteria: [
+        { label: 'Gap 9.2% (need 4%+)', pass: true },
+        { label: 'EPS surprise +55.6%', pass: true },
+        { label: 'Revenue beat +6%', pass: true },
+        { label: 'Strong surprise signal', pass: false },
+      ],
+      isCatalyst: false, catalystScore: 40,
+      matchedKeywords: [],
+      topHeadline: 'Vertex reports strong Q4, reaffirms growth guidance for FY2026',
+      marketCap: 6200
+    },
+    {
+      symbol: 'GATO', companyName: 'Gatos Silver Inc', sector: 'Materials',
+      gap: -14.2, price: 7.80, prevClose: 9.09,
+      epsActual: -0.12, epsEst: -0.04, epsSurprisePct: -200,
+      revActual: 48, revEst: 62, revSurprisePct: -22.6,
+      revDecline: true, magnaRoute: null, magnaScore: 0,
+      criteria: [],
+      isCatalyst: false, catalystScore: 0,
+      matchedKeywords: [],
+      topHeadline: 'Gatos Silver misses Q4 estimates, production challenges persist',
+      marketCap: 780
+    }
+  ];
+
+  allResults = demo;
+  magnaResults = demo.filter(r => r.magnaRoute !== null);
+  catalystResults = demo.filter(r => r.isCatalyst);
+
+  renderResults();
+  setStatus('live', `Demo loaded — ${magnaResults.length} MAGNA53 · ${catalystResults.length} Catalyst (BW included)`);
+}
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function setStatus(state, msg) {
+  const dot = document.getElementById('statusDot');
+  const text = document.getElementById('statusText');
+  dot.className = 'status-dot ' + (state === 'live' ? 'live' : state === 'error' ? 'error' : '');
+  text.textContent = msg;
+  const btn = document.getElementById('scanBtn');
+  btn.classList.toggle('loading', state === 'scanning');
+  btn.disabled = state === 'scanning';
+}
+
+function showSkeletons() {
+  const skel = Array(4).fill(0).map(() =>
+    `<div class="skeleton-card"><div class="skeleton skeleton-line" style="width:30%"></div><div class="skeleton skeleton-line" style="width:60%; margin-top:20px"></div><div class="skeleton skeleton-line" style="width:45%"></div></div>`
+  ).join('');
+  document.getElementById('magna-content').innerHTML = `<div class="cards-grid">${skel}</div>`;
+  document.getElementById('catalyst-content').innerHTML = `<div class="cards-grid">${skel}</div>`;
+}
+
+function showError(elId, msg) {
+  document.getElementById(elId).innerHTML = `<div class="error-state">⚠ ${msg}</div>`;
+}
+
+function getTodayStr() {
+  return new Date().toISOString().split('T')[0];
+}
+
+function getYesterdayStr() {
+  const d = new Date();
+  d.setDate(d.getDate() - 1);
+  return d.toISOString().split('T')[0];
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
